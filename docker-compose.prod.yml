@@ -53,12 +53,18 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        - REACT_APP_API_URL=/api
+        - REACT_APP_MAPBOX_TOKEN=${MAPBOX_ACCESS_TOKEN}
+        - REACT_APP_MAPBOX_STYLE=${MAPBOX_STYLE:-mapbox://styles/mapbox/dark-v11}
+        - REACT_APP_REFRESH_INTERVAL=${REACT_APP_REFRESH_INTERVAL:-60}
     container_name: fiber-monitor-frontend-prod
     ports:
       - "3000:3000"
     environment:
-      - REACT_APP_API_URL=http://localhost:8000
+      - REACT_APP_API_URL=/api
       - REACT_APP_MAPBOX_TOKEN=${MAPBOX_ACCESS_TOKEN}
+      - REACT_APP_MAPBOX_STYLE=${MAPBOX_STYLE:-mapbox://styles/mapbox/dark-v11}
       - NODE_ENV=production
     env_file:
       - .env
