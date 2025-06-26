@@ -1,4 +1,4 @@
-# Multi-stage build for production
+# Build stage
 FROM node:18-alpine as builder
 
 WORKDIR /app
@@ -9,8 +9,16 @@ COPY package*.json ./
 # Install dependencies
 RUN npm ci
 
-# Copy source code
+# Copy all source files
 COPY . .
+
+# Verify files are copied
+RUN echo "=== Checking files ===" && \
+    ls -la && \
+    echo "=== Checking public directory ===" && \
+    ls -la public/ && \
+    echo "=== Checking index.html ===" && \
+    cat public/index.html
 
 # Build the app
 RUN npm run build
