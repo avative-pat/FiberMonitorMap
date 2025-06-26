@@ -3,7 +3,15 @@ import logging
 from typing import Optional, Dict, Any
 import httpx
 from gql import gql, Client
-from gql.transport.httpx import HTTPXAsyncTransport
+
+# Try to import HTTPXAsyncTransport, fallback to None if not available
+try:
+    from gql.transport.httpx import HTTPXAsyncTransport
+    HTTPX_TRANSPORT_AVAILABLE = True
+except ImportError:
+    HTTPXAsyncTransport = None
+    HTTPX_TRANSPORT_AVAILABLE = False
+    logging.warning("gql.transport.httpx not available - Sonar integration will be disabled")
 
 logger = logging.getLogger(__name__)
 
@@ -12,20 +20,28 @@ class SonarService:
         self.sonar_url = os.getenv("SONAR_API_URL")
         self.sonar_token = os.getenv("SONAR_API_KEY")
         
-        # Initialize GraphQL client
-        if self.sonar_url and self.sonar_token:
-            transport = HTTPXAsyncTransport(
-                url=self.sonar_url,
-                headers={
-                    "Authorization": f"Bearer {self.sonar_token}",
-                    "Content-Type": "application/json"
-                },
-                verify=False  # For self-signed certificates
-            )
-            self.client = Client(transport=transport, fetch_schema_from_transport=True)
+        # Initialize GraphQL client only if transport is available
+        if self.sonar_url and self.sonar_token and HTTPX_TRANSPORT_AVAILABLE:
+            try:
+                transport = HTTPXAsyncTransport(
+                    url=self.sonar_url,
+                    headers={
+                        "Authorization": f"Bearer {self.sonar_token}",
+                        "Content-Type": "application/json"
+                    },
+                    verify=False  # For self-signed certificates
+                )
+                self.client = Client(transport=transport, fetch_schema_from_transport=True)
+                logger.info("Sonar GraphQL client initialized successfully")
+            except Exception as e:
+                logger.error(f"Failed to initialize Sonar GraphQL client: {e}")
+                self.client = None
         else:
             self.client = None
-            logger.warning("Sonar API not configured - location enrichment will be disabled")
+            if not HTTPX_TRANSPORT_AVAILABLE:
+                logger.warning("Sonar API transport not available - location enrichment will be disabled")
+            else:
+                logger.warning("Sonar API not configured - location enrichment will be disabled")
     
     async def get_ont_location(self, ont_id: str) -> Optional[Dict[str, Any]]:
         """Get location and account information for an ONT from Sonar"""
