@@ -102,6 +102,7 @@ class EnrichedAlarm(BaseModel):
     port_id: Optional[str] = Field(None, alias="port-id")
     ont_type: Optional[str] = Field(None, alias="ont-type")
     ont_port_id: Optional[str] = Field(None, alias="ont-port-id")
+    pon_system_id: Optional[str] = Field(None, alias="pon-system-id")
     pon_port: Optional[str] = None
     aid: Optional[str] = None
     serial_number: Optional[str] = Field(None, alias="serial-number")
