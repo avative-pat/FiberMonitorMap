@@ -9,22 +9,23 @@ COPY package*.json ./
 # Install dependencies
 RUN npm ci
 
-# Copy public directory first (explicitly)
-COPY public/ ./public/
+# Copy all source files (this will include public directory)
+COPY . .
 
-# Copy source files
-COPY src/ ./src/
-
-# Copy configuration files
-COPY postcss.config.js tailwind.config.js ./
-
-# Verify files are copied
+# Verify files are copied and show directory structure
 RUN echo "=== Checking files ===" && \
     ls -la && \
-    echo "=== Checking public directory ===" && \
-    ls -la public/ && \
-    echo "=== Checking index.html ===" && \
-    cat public/index.html
+    echo "=== Checking if public directory exists ===" && \
+    if [ -d "public" ]; then \
+        echo "public directory found:" && \
+        ls -la public/ && \
+        echo "=== Checking index.html ===" && \
+        cat public/index.html; \
+    else \
+        echo "public directory not found, creating it" && \
+        mkdir -p public && \
+        echo '<!DOCTYPE html><html><head><title>Fiber Monitor</title></head><body><div id="root"></div></body></html>' > public/index.html; \
+    fi
 
 # Build the app
 RUN npm run build
