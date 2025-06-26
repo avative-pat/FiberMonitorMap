@@ -1,4 +1,5 @@
-FROM node:18-alpine
+# Multi-stage build for production
+FROM node:18-alpine as builder
 
 WORKDIR /app
 
@@ -6,7 +7,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install dependencies
-RUN npm ci --only=production
+RUN npm ci
 
 # Copy source code
 COPY . .
@@ -14,8 +15,23 @@ COPY . .
 # Build the app
 RUN npm run build
 
+# Production stage
+FROM node:18-alpine
+
+# Create non-root user
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nextjs -u 1001
+
+WORKDIR /app
+
 # Install serve to run the built app
 RUN npm install -g serve
+
+# Copy built app from builder stage
+COPY --from=builder --chown=nextjs:nodejs /app/build ./build
+
+# Switch to non-root user
+USER nextjs
 
 # Expose port
 EXPOSE 3000

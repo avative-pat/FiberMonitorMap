@@ -3,7 +3,7 @@ version: '3.8'
 services:
   redis:
     image: redis:7-alpine
-    container_name: fiber-monitor-redis
+    container_name: fiber-monitor-redis-prod
     ports:
       - "6379:6379"
     volumes:
@@ -16,25 +16,25 @@ services:
       retries: 3
     networks:
       - fiber-monitor-network
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
 
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: fiber-monitor-backend
+    container_name: fiber-monitor-backend-prod
     ports:
       - "8000:8000"
     environment:
       - REDIS_URL=redis://redis:6379
       - ENVIRONMENT=production
+      - LOG_LEVEL=INFO
     env_file:
       - .env
     depends_on:
       redis:
         condition: service_healthy
     restart: unless-stopped
-    volumes:
-      - ./backend:/app
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
@@ -42,12 +42,20 @@ services:
       retries: 3
     networks:
       - fiber-monitor-network
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
 
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    container_name: fiber-monitor-frontend
+    container_name: fiber-monitor-frontend-prod
     ports:
       - "3000:3000"
     environment:
@@ -60,16 +68,20 @@ services:
       backend:
         condition: service_healthy
     restart: unless-stopped
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
     networks:
       - fiber-monitor-network
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.25'
+        reservations:
+          memory: 128M
+          cpus: '0.1'
 
-  # Optional: Nginx reverse proxy for production
   nginx:
     image: nginx:alpine
-    container_name: fiber-monitor-nginx
+    container_name: fiber-monitor-nginx-prod
     ports:
       - "80:80"
       - "443:443"
@@ -82,11 +94,18 @@ services:
     restart: unless-stopped
     networks:
       - fiber-monitor-network
-    profiles:
-      - production
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.1'
+        reservations:
+          memory: 64M
+          cpus: '0.05'
 
 volumes:
   redis_data:
+    driver: local
 
 networks:
   fiber-monitor-network:
