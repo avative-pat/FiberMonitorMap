@@ -9,8 +9,14 @@ COPY package*.json ./
 # Install dependencies
 RUN npm ci
 
-# Copy all source files
-COPY . .
+# Copy public directory first (explicitly)
+COPY public/ ./public/
+
+# Copy source files
+COPY src/ ./src/
+
+# Copy configuration files
+COPY postcss.config.js tailwind.config.js ./
 
 # Verify files are copied
 RUN echo "=== Checking files ===" && \
