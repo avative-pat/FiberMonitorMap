@@ -108,6 +108,13 @@ class EnrichedAlarm(BaseModel):
     pon_port: Optional[str] = None
     aid: Optional[str] = None
     serial_number: Optional[str] = Field(None, alias="serial-number")
+    switched_pon_id: Optional[str] = Field(None, alias="switched-pon-id")
+    switched_channel_termination: Optional[str] = Field(None, alias="switched-channel-termination")
+    pon_device: Optional[str] = Field(None, alias="pon-device")
+    partition_id: Optional[str] = Field(None, alias="partition-id")
+    switched_shelf: Optional[str] = Field(None, alias="switched-shelf")
+    switched_slot: Optional[str] = Field(None, alias="switched-slot")
+    switched_port: Optional[str] = Field(None, alias="switched-port")
     
     # Acknowledgment fields
     acked: bool = False
