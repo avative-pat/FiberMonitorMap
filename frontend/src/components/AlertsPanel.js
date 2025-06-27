@@ -43,7 +43,9 @@ const AlertsPanel = ({ alerts, loading }) => {
 
   const formatTimestamp = (timestamp) => {
     if (!timestamp) return 'Unknown';
-    const date = new Date(timestamp);
+    // Ensure the timestamp is treated as UTC by adding Z suffix if missing
+    const utcTimestamp = timestamp.endsWith('Z') ? timestamp : timestamp + 'Z';
+    const date = new Date(utcTimestamp);
     return date.toLocaleString();
   };
 

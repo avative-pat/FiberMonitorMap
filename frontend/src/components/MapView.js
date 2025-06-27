@@ -108,7 +108,13 @@ const MapView = ({ alarms, focusMode, setFocusMode }) => {
                   <p class="text-sm text-gray-700">
                     <span class="font-medium">Received:</span> 
                     <span class="timestamp" data-time="${alarm.receiveTimeString}">
-                      ${new Date(alarm.receiveTimeString).toLocaleString()}
+                      ${(() => {
+                        // Ensure the timestamp is treated as UTC by adding Z suffix if missing
+                        const timestamp = alarm.receiveTimeString.endsWith('Z') 
+                          ? alarm.receiveTimeString 
+                          : alarm.receiveTimeString + 'Z';
+                        return new Date(timestamp).toLocaleString();
+                      })()}
                     </span>
                   </p>
                   <p class="text-xs text-gray-500 mt-1">
@@ -203,7 +209,9 @@ const MapView = ({ alarms, focusMode, setFocusMode }) => {
   const getRelativeTime = (timestamp) => {
     if (!timestamp) return '';
     
-    const alarmTime = new Date(timestamp);
+    // Ensure the timestamp is treated as UTC by adding Z suffix if missing
+    const utcTimestamp = timestamp.endsWith('Z') ? timestamp : timestamp + 'Z';
+    const alarmTime = new Date(utcTimestamp);
     const now = new Date();
     const diffMs = now - alarmTime;
     const diffSeconds = Math.floor(diffMs / 1000);

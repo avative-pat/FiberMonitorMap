@@ -35,7 +35,12 @@ function App() {
   // Compute default date range from alarms
   const defaultDateRange = useMemo(() => {
     const alarmDates = alarms
-      .map(a => a.receiveTimeString ? new Date(a.receiveTimeString) : null)
+      .map(a => {
+        if (!a.receiveTimeString) return null;
+        // Ensure the timestamp is treated as UTC by adding Z suffix if missing
+        const utcTimestamp = a.receiveTimeString.endsWith('Z') ? a.receiveTimeString : a.receiveTimeString + 'Z';
+        return new Date(utcTimestamp);
+      })
       .filter(Boolean)
       .sort((a, b) => a - b);
     
@@ -175,7 +180,9 @@ function App() {
       // Alarm Age Date Range filter
       if (filters.alarmDateRange && filters.alarmDateRange.start && filters.alarmDateRange.end) {
         if (!alarm.receiveTimeString) return false;
-        const alarmDate = new Date(alarm.receiveTimeString);
+        // Ensure the timestamp is treated as UTC by adding Z suffix if missing
+        const utcTimestamp = alarm.receiveTimeString.endsWith('Z') ? alarm.receiveTimeString : alarm.receiveTimeString + 'Z';
+        const alarmDate = new Date(utcTimestamp);
         const startDate = new Date(filters.alarmDateRange.start);
         const endDate = new Date(filters.alarmDateRange.end);
         

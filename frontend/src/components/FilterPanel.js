@@ -17,7 +17,12 @@ function formatDateForDisplay(date) {
 const FilterPanel = ({ alarms, filters, setFilters }) => {
   // Compute min/max dates from alarms
   const alarmDates = useMemo(() => alarms
-    .map(a => a.receiveTimeString ? new Date(a.receiveTimeString) : null)
+    .map(a => {
+      if (!a.receiveTimeString) return null;
+      // Ensure the timestamp is treated as UTC by adding Z suffix if missing
+      const utcTimestamp = a.receiveTimeString.endsWith('Z') ? a.receiveTimeString : a.receiveTimeString + 'Z';
+      return new Date(utcTimestamp);
+    })
     .filter(Boolean)
     .sort((a, b) => a - b), [alarms]);
   

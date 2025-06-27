@@ -638,10 +638,10 @@ class AlarmService:
                 
                 # Convert timestamps to strings
                 try:
-                    receive_time = datetime.fromtimestamp(enriched_alarm.receiveTime / 1000)
-                    device_time = datetime.fromtimestamp(enriched_alarm.deviceTime / 1000)
-                    enriched_alarm.receiveTimeString = receive_time.isoformat()
-                    enriched_alarm.deviceTimeString = device_time.isoformat()
+                    receive_time = datetime.utcfromtimestamp(enriched_alarm.receiveTime / 1000)
+                    device_time = datetime.utcfromtimestamp(enriched_alarm.deviceTime / 1000)
+                    enriched_alarm.receiveTimeString = receive_time.isoformat() + 'Z'
+                    enriched_alarm.deviceTimeString = device_time.isoformat() + 'Z'
                 except Exception as e:
                     logger.warning(f"  Step 2a: Error converting timestamps: {e}")
                     enriched_alarm.receiveTimeString = "Unknown"
@@ -1059,10 +1059,10 @@ class AlarmService:
                 
                 # Convert timestamps to strings
                 try:
-                    receive_time = datetime.fromtimestamp(enriched_alarm.receiveTime / 1000)
-                    device_time = datetime.fromtimestamp(enriched_alarm.deviceTime / 1000)
-                    enriched_alarm.receiveTimeString = receive_time.isoformat()
-                    enriched_alarm.deviceTimeString = device_time.isoformat()
+                    receive_time = datetime.utcfromtimestamp(enriched_alarm.receiveTime / 1000)
+                    device_time = datetime.utcfromtimestamp(enriched_alarm.deviceTime / 1000)
+                    enriched_alarm.receiveTimeString = receive_time.isoformat() + 'Z'
+                    enriched_alarm.deviceTimeString = device_time.isoformat() + 'Z'
                 except Exception as e:
                     logger.warning(f"  Step 2a: Error converting timestamps: {e}")
                     enriched_alarm.receiveTimeString = "Unknown"
