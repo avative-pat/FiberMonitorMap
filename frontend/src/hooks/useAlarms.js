@@ -6,6 +6,7 @@ export const useAlarms = () => {
   const [alarms, setAlarms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [syncing, setSyncing] = useState(false);
 
   const fetchAlarms = useCallback(async () => {
     try {
@@ -51,6 +52,39 @@ export const useAlarms = () => {
     }
   }, []);
 
+  const syncAlarms = useCallback(async () => {
+    try {
+      setSyncing(true);
+      setError(null);
+      
+      console.log('Triggering full backend sync...');
+      const response = await fetch(`${API_BASE_URL}/sync`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      console.log('Full sync triggered:', result);
+      
+      // Wait a moment for the sync to start, then fetch fresh data
+      setTimeout(() => {
+        fetchAlarms();
+      }, 1000);
+      
+    } catch (err) {
+      console.error('Error triggering full sync:', err);
+      setError(err.message);
+    } finally {
+      setSyncing(false);
+    }
+  }, [fetchAlarms]);
+
   useEffect(() => {
     fetchAlarms();
   }, [fetchAlarms]);
@@ -63,6 +97,8 @@ export const useAlarms = () => {
     alarms,
     loading,
     error,
-    refreshAlarms
+    syncing,
+    refreshAlarms,
+    syncAlarms
   };
 }; 

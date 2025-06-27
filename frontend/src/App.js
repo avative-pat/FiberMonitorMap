@@ -28,7 +28,7 @@ function App() {
   const [refreshInterval, setRefreshInterval] = useState(getInitialRefreshInterval);
   
   // Custom hooks for data fetching
-  const { alarms, loading: alarmsLoading, refreshAlarms } = useAlarms();
+  const { alarms, loading: alarmsLoading, syncing: alarmsSyncing, refreshAlarms, syncAlarms } = useAlarms();
   const { alerts, loading: alertsLoading, refreshAlerts } = useAlerts();
   const { status, loading: statusLoading, refreshStatus } = useStatus();
 
@@ -126,12 +126,12 @@ function App() {
     return () => clearInterval(interval);
   }, [refreshAlarms, refreshAlerts, refreshStatus, refreshInterval]);
 
-  // Manual refresh function
+  // Manual refresh function - now triggers full backend sync
   const handleRefresh = useCallback(() => {
-    refreshAlarms();
+    syncAlarms(); // Trigger full backend sync
     refreshAlerts();
     refreshStatus();
-  }, [refreshAlarms, refreshAlerts, refreshStatus]);
+  }, [syncAlarms, refreshAlerts, refreshStatus]);
 
   // Filter alarms based on selected filters
   const filteredAlarms = useMemo(() => {
@@ -222,13 +222,13 @@ function App() {
           
           <button
             onClick={handleRefresh}
-            disabled={alarmsLoading}
+            disabled={alarmsLoading || alarmsSyncing}
             className="p-2 rounded-md hover:bg-gray-700 transition-colors disabled:opacity-50"
-            title="Refresh data"
+            title={alarmsSyncing ? "Syncing with backend..." : "Refresh data (full sync)"}
           >
             <RefreshCw 
               size={20} 
-              className={alarmsLoading ? 'animate-spin' : ''} 
+              className={(alarmsLoading || alarmsSyncing) ? 'animate-spin' : ''} 
             />
           </button>
 

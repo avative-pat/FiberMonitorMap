@@ -1164,3 +1164,50 @@ class AlarmService:
         logger.info(f"Re-enrichment complete: Successfully processed {len(re_enriched_alarms)} out of {len(raw_alarms)} alarms")
         return re_enriched_alarms
     
+    async def full_sync_alarms(self):
+        """Force a full sync: immediate SMx call and re-enrichment of all alarms regardless of elapsed time"""
+        try:
+            logger.info("=== STARTING FULL ALARM SYNC ===")
+            
+            # Fetch fresh alarms from SMx
+            logger.info("Step 1: Fetching fresh alarms from SMx...")
+            raw_alarms = await self._fetch_smx_alarms()
+            logger.info(f"Step 1 COMPLETE: Fetched {len(raw_alarms)} fresh alarms from SMx")
+            
+            if not raw_alarms:
+                logger.warning("No alarms received from SMx - ending sync")
+                return
+            
+            # Log raw alarm details for debugging
+            for i, alarm in enumerate(raw_alarms[:3]):  # Log first 3 alarms
+                logger.info(f"Raw alarm {i+1}: sequenceNum={alarm.get('sequenceNum', 'N/A')}, description={alarm.get('description', 'N/A')}")
+            
+            # Get existing alarms from Redis to preserve any existing data
+            logger.info("Step 2: Retrieving existing alarms from Redis for data preservation...")
+            existing_alarms = await self._get_existing_alarms()
+            existing_sequence_nums = {alarm.sequenceNum for alarm in existing_alarms}
+            logger.info(f"Step 2 COMPLETE: Found {len(existing_alarms)} existing alarms in Redis")
+            
+            # For full sync, we re-enrich ALL alarms regardless of when they were last enriched
+            logger.info("Step 3: Starting full re-enrichment of all alarms...")
+            re_enriched_alarms = await self._re_enrich_alarms(raw_alarms)
+            logger.info(f"Step 3 COMPLETE: Re-enriched {len(re_enriched_alarms)} alarms")
+            
+            # Store all re-enriched alarms in Redis
+            logger.info("Step 4: Storing all re-enriched alarms in Redis...")
+            await self._store_alarms(re_enriched_alarms)
+            logger.info(f"Step 4 COMPLETE: Stored {len(re_enriched_alarms)} alarms in Redis")
+            
+            # Update last poll time
+            logger.info("Step 5: Updating last poll time...")
+            await self._update_last_poll_time()
+            logger.info("Step 5 COMPLETE: Last poll time updated")
+            
+            logger.info(f"=== FULL ALARM SYNC COMPLETE: Successfully processed {len(re_enriched_alarms)} alarms ===")
+            
+        except Exception as e:
+            logger.error(f"=== FULL ALARM SYNC FAILED: {e} ===")
+            import traceback
+            logger.error(f"Traceback: {traceback.format_exc()}")
+            raise
+    

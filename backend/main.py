@@ -198,6 +198,23 @@ async def manual_poll(background_tasks: BackgroundTasks):
         logger.error(f"Error starting manual poll: {e}")
         raise HTTPException(status_code=500, detail="Failed to start polling")
 
+@app.post("/sync")
+async def full_sync(background_tasks: BackgroundTasks):
+    """Trigger a full backend sync: immediate SMx call and re-enrichment of all alarms"""
+    if not alarm_service:
+        raise HTTPException(status_code=503, detail="Alarm service not initialized")
+    
+    try:
+        background_tasks.add_task(alarm_service.full_sync_alarms)
+        return {
+            "message": "Full sync started", 
+            "timestamp": datetime.utcnow().isoformat(),
+            "description": "Fetching fresh data from SMx and re-enriching all alarms"
+        }
+    except Exception as e:
+        logger.error(f"Error starting full sync: {e}")
+        raise HTTPException(status_code=500, detail="Failed to start full sync")
+
 @app.get("/test-mock-alarms")
 async def test_mock_alarms():
     """Test endpoint to get raw mock alarms without enrichment"""
