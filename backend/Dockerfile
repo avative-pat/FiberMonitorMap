@@ -13,7 +13,7 @@ RUN apt-get update && apt-get install -y \
 COPY requirements.txt .
 RUN pip install --no-cache-dir --user -r requirements.txt
 # Explicitly install gql httpx transport
-RUN pip install --no-cache-dir --user "gql[httpx]==3.4.1"
+RUN pip install --no-cache-dir --user "gql[httpx]==3.5.0"
 
 # Production stage
 FROM python:3.11-slim

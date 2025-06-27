@@ -4,14 +4,25 @@ from typing import Optional, Dict, Any
 import httpx
 from gql import gql, Client
 
-# Try to import HTTPXAsyncTransport, fallback to None if not available
+# Try to import HTTPXAsyncTransport
+HTTPX_TRANSPORT_AVAILABLE = False
+HTTPXAsyncTransport = None
+
 try:
     from gql.transport.httpx import HTTPXAsyncTransport
     HTTPX_TRANSPORT_AVAILABLE = True
-except ImportError:
-    HTTPXAsyncTransport = None
+    logger = logging.getLogger(__name__)
+    logger.info("Successfully imported HTTPXAsyncTransport")
+except ImportError as e:
     HTTPX_TRANSPORT_AVAILABLE = False
-    logging.warning("gql.transport.httpx not available - Sonar integration will be disabled")
+    logger = logging.getLogger(__name__)
+    logger.warning(f"gql.transport.httpx not available - Sonar integration will be disabled. Error: {e}")
+    logger.info("Available gql transports: trying to list them...")
+    try:
+        import gql.transport
+        logger.info(f"Available gql transport modules: {dir(gql.transport)}")
+    except Exception as e2:
+        logger.error(f"Could not inspect gql.transport: {e2}")
 
 logger = logging.getLogger(__name__)
 
