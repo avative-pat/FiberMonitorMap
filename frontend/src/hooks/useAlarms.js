@@ -57,23 +57,34 @@ export const useAlarms = () => {
       setSyncing(true);
       setError(null);
       
+      const syncUrl = `${API_BASE_URL}/sync`;
+      console.log('=== SYNC DEBUG ===');
+      console.log('API_BASE_URL:', API_BASE_URL);
+      console.log('Full sync URL:', syncUrl);
       console.log('Triggering full backend sync...');
-      const response = await fetch(`${API_BASE_URL}/sync`, {
+      
+      const response = await fetch(syncUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
       });
       
+      console.log('Response status:', response.status);
+      console.log('Response ok:', response.ok);
+      
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorText = await response.text();
+        console.error('Response error text:', errorText);
+        throw new Error(`HTTP error! status: ${response.status}, body: ${errorText}`);
       }
       
       const result = await response.json();
-      console.log('Full sync triggered:', result);
+      console.log('Full sync triggered successfully:', result);
       
       // Wait a moment for the sync to start, then fetch fresh data
       setTimeout(() => {
+        console.log('Fetching fresh data after sync...');
         fetchAlarms();
       }, 1000);
       
@@ -82,8 +93,9 @@ export const useAlarms = () => {
       setError(err.message);
     } finally {
       setSyncing(false);
+      console.log('=== SYNC DEBUG END ===');
     }
-  }, [fetchAlarms]);
+  }, []);
 
   useEffect(() => {
     fetchAlarms();

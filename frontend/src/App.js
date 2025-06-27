@@ -128,9 +128,14 @@ function App() {
 
   // Manual refresh function - now triggers full backend sync
   const handleRefresh = useCallback(() => {
+    console.log('=== REFRESH BUTTON CLICKED ===');
+    console.log('Calling syncAlarms...');
     syncAlarms(); // Trigger full backend sync
+    console.log('Calling refreshAlerts...');
     refreshAlerts();
+    console.log('Calling refreshStatus...');
     refreshStatus();
+    console.log('=== REFRESH BUTTON HANDLED ===');
   }, [syncAlarms, refreshAlerts, refreshStatus]);
 
   // Filter alarms based on selected filters
