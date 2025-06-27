@@ -42,7 +42,7 @@ class SonarService:
                     },
                     verify=False  # For self-signed certificates
                 )
-                self.client = Client(transport=transport, fetch_schema_from_transport=True)
+                self.client = Client(transport=transport, fetch_schema_from_transport=False)
                 logger.info("Sonar GraphQL client initialized successfully")
             except Exception as e:
                 logger.error(f"Failed to initialize Sonar GraphQL client: {e}")
