@@ -28,7 +28,8 @@ logger = logging.getLogger(__name__)
 app = FastAPI(
     title="Fiber Network Monitoring System",
     description="Real-time monitoring system for Calix AXOS fiber network alarms",
-    version="1.0.0"
+    version="1.0.0",
+    openapi_version="3.1.0"
 )
 
 # Add CORS middleware
@@ -70,17 +71,34 @@ async def startup_event():
     """Initialize services on startup"""
     global redis_client, alarm_service, sonar_service, rules_engine
     
-    # Initialize Redis connection
-    redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
-    redis_client = redis.from_url(redis_url)
-    
-    # Initialize services
-    alarm_service = AlarmService(redis_client)
-    sonar_service = SonarService()
-    rules_engine = RulesEngine(redis_client)
-    
-    # Start the alarm polling scheduler
-    await alarm_service.start_polling()
+    try:
+        # Initialize Redis connection
+        redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
+        logger.info(f"Connecting to Redis at: {redis_url}")
+        redis_client = redis.from_url(redis_url)
+        
+        # Test Redis connection
+        await redis_client.ping()
+        logger.info("✅ Redis connection successful")
+        
+        # Initialize services
+        alarm_service = AlarmService(redis_client)
+        sonar_service = SonarService()
+        rules_engine = RulesEngine(redis_client)
+        logger.info("✅ Services initialized successfully")
+        
+        # Start the alarm polling scheduler (but don't fail startup if it fails)
+        try:
+            await alarm_service.start_polling()
+            logger.info("✅ Alarm polling started successfully")
+        except Exception as e:
+            logger.warning(f"⚠️ Failed to start alarm polling: {e}")
+            logger.info("Application will start without alarm polling - it can be started manually later")
+            
+    except Exception as e:
+        logger.error(f"❌ Startup failed: {e}")
+        # Don't raise the exception - let the app start anyway
+        # The health check will indicate if there are issues
 
 @app.on_event("shutdown")
 async def shutdown_event():
@@ -93,11 +111,46 @@ async def shutdown_event():
 @app.get("/health")
 async def health_check():
     """Health check endpoint"""
-    return {"status": "healthy", "timestamp": datetime.utcnow().isoformat()}
+    try:
+        # Check Redis connection
+        redis_status = "unknown"
+        if redis_client:
+            try:
+                await redis_client.ping()
+                redis_status = "healthy"
+            except Exception as e:
+                redis_status = f"unhealthy: {str(e)}"
+        else:
+            redis_status = "not_initialized"
+        
+        # Check alarm service status
+        alarm_service_status = "unknown"
+        if alarm_service:
+            alarm_service_status = "healthy" if alarm_service.is_polling_active() else "not_polling"
+        else:
+            alarm_service_status = "not_initialized"
+        
+        return {
+            "status": "healthy" if redis_status == "healthy" else "degraded",
+            "timestamp": datetime.utcnow().isoformat(),
+            "services": {
+                "redis": redis_status,
+                "alarm_service": alarm_service_status
+            }
+        }
+    except Exception as e:
+        return {
+            "status": "unhealthy",
+            "timestamp": datetime.utcnow().isoformat(),
+            "error": str(e)
+        }
 
 @app.get("/alarms", response_model=List[AlarmResponse])
 async def get_alarms():
     """Get all currently active alarms"""
+    if not alarm_service:
+        raise HTTPException(status_code=503, detail="Alarm service not initialized")
+    
     try:
         alarms = await alarm_service.get_all_alarms()
         return alarms
@@ -108,6 +161,9 @@ async def get_alarms():
 @app.get("/alerts", response_model=List[AlertResponse])
 async def get_alerts():
     """Get current system alerts"""
+    if not rules_engine:
+        raise HTTPException(status_code=503, detail="Rules engine not initialized")
+    
     try:
         alerts = await rules_engine.get_current_alerts()
         return alerts
@@ -118,6 +174,9 @@ async def get_alerts():
 @app.get("/status", response_model=StatusResponse)
 async def get_status():
     """Get polling status and last poll time"""
+    if not alarm_service:
+        raise HTTPException(status_code=503, detail="Alarm service not initialized")
+    
     try:
         last_poll = await alarm_service.get_last_poll_time()
         return StatusResponse(
