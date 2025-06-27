@@ -700,6 +700,7 @@ class AlarmService:
                         
                         # Populate other Sonar fields
                         enriched_alarm.account_status = sonar_data.get("account_status")
+                        enriched_alarm.account_activates_account = sonar_data.get("account_activates_account")
                         enriched_alarm.customer_type = sonar_data.get("customer_type")
                         enriched_alarm.service_name = sonar_data.get("service_name")
                         enriched_alarm.inventory_model = sonar_data.get("inventory_model")
@@ -924,6 +925,7 @@ class AlarmService:
                             account_id=enriched_alarm.account_id,
                             account_name=enriched_alarm.account_name,
                             account_status=enriched_alarm.account_status,
+                            account_activates_account=enriched_alarm.account_activates_account,
                             customer_type=enriched_alarm.customer_type,
                             service_name=enriched_alarm.service_name,
                             inventory_model=enriched_alarm.inventory_model,
@@ -1122,6 +1124,7 @@ class AlarmService:
                         
                         # Populate other Sonar fields
                         enriched_alarm.account_status = sonar_data.get("account_status")
+                        enriched_alarm.account_activates_account = sonar_data.get("account_activates_account")
                         enriched_alarm.customer_type = sonar_data.get("customer_type")
                         enriched_alarm.service_name = sonar_data.get("service_name")
                         enriched_alarm.inventory_model = sonar_data.get("inventory_model")

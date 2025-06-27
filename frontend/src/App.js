@@ -158,8 +158,10 @@ function App() {
       
       // Customer status filter
       if (filters.customerStatus.length > 0) {
-        const hasCustomer = alarm.account_name !== null && alarm.account_name !== undefined;
-        const customerStatus = hasCustomer ? 'Customer Associated' : 'No Customer';
+        // Use the explicit account_activates_account field if available, otherwise fall back to checking account_name
+        const hasActiveCustomer = alarm.account_activates_account === true || 
+                                (alarm.account_activates_account === null && alarm.account_name !== null && alarm.account_name !== undefined);
+        const customerStatus = hasActiveCustomer ? 'Customer Associated' : 'No Customer';
         if (!filters.customerStatus.includes(customerStatus)) {
           return false;
         }

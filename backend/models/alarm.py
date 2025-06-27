@@ -141,6 +141,7 @@ class EnrichedAlarm(BaseModel):
     account_id: Optional[str] = None
     account_name: Optional[str] = None
     account_status: Optional[str] = None
+    account_activates_account: Optional[bool] = None
     customer_type: Optional[str] = None
     service_name: Optional[str] = None
     inventory_model: Optional[str] = None
@@ -215,6 +216,7 @@ class AlarmResponse(BaseModel):
     account_id: Optional[str] = None
     account_name: Optional[str] = None
     account_status: Optional[str] = None
+    account_activates_account: Optional[bool] = None
     customer_type: Optional[str] = None
     service_name: Optional[str] = None
     inventory_model: Optional[str] = None

@@ -240,7 +240,8 @@ class SonarService:
                         "customer_id": customer_data.get("customer_id"),
                         "customer_name": customer_data.get("customer_name"),
                         "customer_type": customer_data.get("customer_type"),
-                        "customer_status": customer_data.get("customer_status")
+                        "customer_status": customer_data.get("customer_status"),
+                        "account_activates_account": customer_data.get("activates_account")
                     }
                     
                     logger.info(f"[SONAR] Final address details for address_id={address_id}: {result_data}")
@@ -269,6 +270,7 @@ class SonarService:
                             }
                             account_status {
                                 name
+                                activates_account
                             }
                         }
                     }
@@ -282,14 +284,21 @@ class SonarService:
                 entities = result["accounts"]["entities"]
                 if entities:
                     account = entities[0]  # Get first account entity
+                    account_status = account.get("account_status", {})
                     
-                    # Return customer data with prefixed keys to avoid conflicts
-                    return {
-                        "customer_id": account.get("id"),
-                        "customer_name": account.get("name"),
-                        "customer_type": account.get("account_type", {}).get("name"),
-                        "customer_status": account.get("account_status", {}).get("name")
-                    }
+                    # Only return customer data if the account activates_account field is true
+                    if account_status.get("activates_account", False):
+                        # Return customer data with prefixed keys to avoid conflicts
+                        return {
+                            "customer_id": account.get("id"),
+                            "customer_name": account.get("name"),
+                            "customer_type": account.get("account_type", {}).get("name"),
+                            "customer_status": account_status.get("name"),
+                            "activates_account": True
+                        }
+                    else:
+                        logger.info(f"[SONAR] Account {account_id} has status '{account_status.get('name')}' but activates_account=False - not associating with alarm")
+                        return {}
             
             return {}
             
