@@ -32,31 +32,7 @@ function App() {
   const { alerts, loading: alertsLoading, refreshAlerts } = useAlerts();
   const { status, loading: statusLoading, refreshStatus } = useStatus();
 
-  // Compute default date range from alarms
-  const defaultDateRange = useMemo(() => {
-    const alarmDates = alarms
-      .map(a => {
-        if (!a.receiveTimeString) return null;
-        // Ensure the timestamp is treated as UTC by adding Z suffix if missing
-        const utcTimestamp = a.receiveTimeString.endsWith('Z') ? a.receiveTimeString : a.receiveTimeString + 'Z';
-        return new Date(utcTimestamp);
-      })
-      .filter(Boolean)
-      .sort((a, b) => a - b);
-    
-    const minDate = alarmDates.length > 0 ? alarmDates[0] : new Date();
-    const maxDate = alarmDates.length > 0 ? alarmDates[alarmDates.length - 1] : new Date();
-    
-    // Use tomorrow's date as the upper bound
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const sliderMaxDate = maxDate > tomorrow ? maxDate : tomorrow;
-    
-    return {
-      start: minDate.toISOString().slice(0, 10),
-      end: sliderMaxDate.toISOString().slice(0, 10)
-    };
-  }, [alarms]);
+
 
   // Load filters from localStorage or use defaults
   const getInitialFilters = () => {
@@ -68,9 +44,9 @@ function App() {
         if (!parsed.customerStatus || parsed.customerStatus.length === 0) {
           parsed.customerStatus = ['Customer Associated'];
         }
-        // Validate date range - if invalid, it will be set by the useEffect later
-        if (parsed.alarmDateRange && (!parsed.alarmDateRange.start || !parsed.alarmDateRange.end)) {
-          parsed.alarmDateRange = { start: '', end: '' };
+        // Ensure alarmAge has a default value
+        if (!parsed.alarmAge) {
+          parsed.alarmAge = 'all';
         }
         return parsed;
       }
@@ -84,7 +60,7 @@ function App() {
       category: [],
       region: [],
       customerStatus: ['Customer Associated'], // Default to showing customer-associated alarms
-      alarmDateRange: { start: '', end: '' }
+      alarmAge: 'all'
     };
   };
 
@@ -108,17 +84,7 @@ function App() {
     }
   }, [refreshInterval]);
 
-  // Update filters when defaultDateRange changes, but preserve existing filter values
-  useEffect(() => {
-    if (defaultDateRange.start && defaultDateRange.end) {
-      setFilters(prev => ({
-        ...prev,
-        alarmDateRange: prev.alarmDateRange.start && prev.alarmDateRange.end 
-          ? prev.alarmDateRange // Keep existing date range if already set
-          : defaultDateRange // Only set default if no date range exists
-      }));
-    }
-  }, [defaultDateRange]);
+
 
   // Auto-refresh based on configured interval
   useEffect(() => {
@@ -177,20 +143,36 @@ function App() {
         }
       }
 
-      // Alarm Age Date Range filter
-      if (filters.alarmDateRange && filters.alarmDateRange.start && filters.alarmDateRange.end) {
+      // Alarm Age filter
+      if (filters.alarmAge && filters.alarmAge !== 'all') {
         if (!alarm.receiveTimeString) return false;
         // Ensure the timestamp is treated as UTC by adding Z suffix if missing
         const utcTimestamp = alarm.receiveTimeString.endsWith('Z') ? alarm.receiveTimeString : alarm.receiveTimeString + 'Z';
         const alarmDate = new Date(utcTimestamp);
-        const startDate = new Date(filters.alarmDateRange.start);
-        const endDate = new Date(filters.alarmDateRange.end);
+        const now = new Date();
         
-        // Set time to start of day for start date and end of day for end date
-        startDate.setHours(0, 0, 0, 0);
-        endDate.setHours(23, 59, 59, 999);
+        let cutoffDate;
+        switch (filters.alarmAge) {
+          case '1h':
+            cutoffDate = new Date(now.getTime() - 60 * 60 * 1000); // 1 hour ago
+            break;
+          case '12h':
+            cutoffDate = new Date(now.getTime() - 12 * 60 * 60 * 1000); // 12 hours ago
+            break;
+          case '24h':
+            cutoffDate = new Date(now.getTime() - 24 * 60 * 60 * 1000); // 24 hours ago
+            break;
+          case '7d':
+            cutoffDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000); // 7 days ago
+            break;
+          case '30d':
+            cutoffDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000); // 30 days ago
+            break;
+          default:
+            cutoffDate = null;
+        }
         
-        if (alarmDate < startDate || alarmDate > endDate) {
+        if (cutoffDate && alarmDate < cutoffDate) {
           return false;
         }
       }
